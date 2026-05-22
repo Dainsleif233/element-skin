@@ -17,7 +17,8 @@ from backends.admin_backend import AdminBackend
 from utils.crypto import CryptoUtils
 from utils.rate_limiter import RateLimiter
 from utils.cached_static import CachedStaticFiles
-from routers import yggdrasil_routes, site_routes, microsoft_routes, admin_routes
+from backends.union_backend import UnionBackend
+from routers import yggdrasil_routes, site_routes, microsoft_routes, admin_routes, union_routes
 
 # ========== 初始化核心组件 ==========
 db_dsn = config.get("database.dsn", "postgresql://elementskin:password@localhost:5432/elementskin")
@@ -29,6 +30,8 @@ rate_limiter = RateLimiter(db)  # New dependency-injected rate limiter
 ygg_backend = YggdrasilBackend(db, crypto)
 site_backend = SiteBackend(db, config)
 admin_backend = AdminBackend(db, config)
+union_backend = UnionBackend(db, config)
+site_backend.set_union_backend(union_backend)
 
 
 @asynccontextmanager
@@ -36,6 +39,8 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     await db.connect()
     await db.init()
+    # Auto-generate OAuth2 signing keys if not yet configured
+    await union_backend.ensure_oauth2_keys()
     try:
         yield
     finally:
@@ -106,6 +111,9 @@ app.include_router(admin_router)
 
 microsoft_router = microsoft_routes.setup_routes(db, config)
 app.include_router(microsoft_router)
+
+union_router = union_routes.setup_routes(db, union_backend, rate_limiter, config)
+app.include_router(union_router)
 
 # ========== 应用启动 ==========
 

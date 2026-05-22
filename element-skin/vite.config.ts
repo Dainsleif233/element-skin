@@ -21,6 +21,12 @@ export default defineConfig({
     {
       name: 'serve-static-assets',
       configureServer(server) {
+        // authlib-injector 服务发现: 所有响应携带 API 位置
+        server.middlewares.use((_req, res, next) => {
+          res.setHeader('x-authlib-injector-api-location', '/api/yggdrasil')
+          next()
+        })
+
         server.middlewares.use((req, res, next) => {
           // 获取不带 base 前缀的路径
           const base = process.env.VITE_BASE_PATH || '/'
@@ -54,22 +60,40 @@ export default defineConfig({
   server: {
     // 开发时将常用后端路由代理到本地后端，避免跨域或错发到 Vite dev server
     proxy: {
+      // Yggdrasil API 别名: /api/yggdrasil/* → /*
+      '^/api/yggdrasil': {
+        target: 'http://127.0.0.1:6749',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/yggdrasil/, '') || '/',
+      },
       // Yggdrasil / auth APIs
       '^/authserver': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:6749',
         changeOrigin: true,
         rewrite: (path) => path,
       },
       // Session APIs
       '^/sessionserver': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:6749',
+        changeOrigin: true,
+        rewrite: (path) => path,
+      },
+      // Union API
+      '^/api/union': {
+        target: 'http://127.0.0.1:6749',
+        changeOrigin: true,
+        rewrite: (path) => path,
+      },
+      // Union user-facing API & Restore API
+      '^/(union|restore)': {
+        target: 'http://127.0.0.1:6749',
         changeOrigin: true,
         rewrite: (path) => path,
       },
       // API routes that might conflict with frontend routes
       // When a browser refreshes on these paths, it should serve index.html instead of proxying to the backend
       '^/(admin|register|reset-password|site-login|me|public|microsoft|send-verification-code|remote-ygg)': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:6749',
         changeOrigin: true,
         bypass: (req) => {
           if (req.headers.accept?.indexOf('text/html') !== -1) {
@@ -77,7 +101,8 @@ export default defineConfig({
           }
         }
       },
-    }
+    },
+    allowedHosts: ['union-test.dainsleif.eu.org']
   },
   build: {
     sourcemap: !isLowMemory,

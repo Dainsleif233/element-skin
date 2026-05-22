@@ -62,3 +62,6 @@ node_modules/
 .history/
 
 .gemini/
+refer
+.claude
+CLAUDE.md

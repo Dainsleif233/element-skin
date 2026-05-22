@@ -20,7 +20,7 @@ carousel:
 
 server:
   host: "0.0.0.0"
-  port: 8000
+  port: 6749
   root_path: ""
   site_url: "http://yourdomain.com"
   api_url: "http://yourdomain.com/skinapi"
@@ -29,6 +29,13 @@ server:
 cors:
   allow_origins: ["*"]
   allow_credentials: true
+
+# Union 配置
+union:
+  api_root: "https://skin.mualliance.ltd/api/union"
+  member_key: ""
+  enable_update: true
+  enable_oauth2: true
 
 mojang:
   session_url: "https://sessionserver.mojang.com"

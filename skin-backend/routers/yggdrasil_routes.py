@@ -273,6 +273,21 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         # 读取公钥
         public_key_pem = crypto.get_public_key_pem()
 
+        # 收集 Union 服务器域名
+        union_skin_domains = []
+        try:
+            union_list_json = await db.union.get("union_server_list", "[]")
+            union_list = json.loads(union_list_json) if union_list_json else []
+            for server in union_list:
+                bs_root = server.get("bs_root", "")
+                if bs_root:
+                    from urllib.parse import urlparse
+                    host = urlparse(bs_root).hostname
+                    if host:
+                        union_skin_domains.append(host)
+        except Exception:
+            pass
+
         # 构建元数据响应
         metadata = {
             "meta": {
@@ -286,6 +301,7 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
                 "feature.non_email_login": True,
             },
             "skinDomains": await db.fallback.collect_skin_domains()
+            + union_skin_domains
             + [
                 (
                     site_url.replace("https://", "")

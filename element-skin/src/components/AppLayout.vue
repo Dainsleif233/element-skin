@@ -135,7 +135,7 @@ import { computed, ref, onMounted, onUnmounted, provide, watch, nextTick } from 
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import {
-  Menu as MenuIcon, Box, User, Setting, Tools, Back, Odometer, Link, Picture, Message, Moon, Sunny
+  Menu as MenuIcon, Box, User, Setting, Tools, Back, Odometer, Link, Picture, Message, Moon, Sunny, Connection
 } from '@element-plus/icons-vue'
 
 import '@/assets/scripts/meow.js'
@@ -200,6 +200,7 @@ const dashboardLinks = [
   { path: '/dashboard/home', title: '仪表盘', icon: Odometer },
   { path: '/dashboard/wardrobe', title: '我的衣柜', icon: Box },
   { path: '/dashboard/roles', title: '角色管理', icon: User },
+  { path: '/dashboard/union', title: '角色绑定', icon: Connection },
   { path: '/dashboard/profile', title: '个人资料', icon: Setting },
 ]
 const adminNavLinks = [
@@ -208,6 +209,7 @@ const adminNavLinks = [
   { path: '/admin/invites', title: '邀请码管理', icon: Tools },
   { path: '/admin/settings', title: '站点设置', icon: Setting },
   { path: '/admin/email', title: '邮件服务', icon: Message },
+  { path: '/admin/union', title: 'Union', icon: Connection },
   { path: '/admin/mojang', title: 'Fallback 服务', icon: Link },
   { path: '/admin/carousel', title: '首页图片', icon: Picture },
 ]

@@ -24,6 +24,11 @@ class SiteBackend:
         self.db = db
         self.config = config
         self.email_sender = EmailSender(db)
+        self._union_backend = None
+
+    def set_union_backend(self, union_backend):
+        """Set Union backend for profile sync hooks."""
+        self._union_backend = union_backend
 
     async def _generate_profile_uuid(self, profile_name: str) -> str:
         mode = (await self.db.setting.get("profile_uuid_mode", "random") or "random").strip().lower()
@@ -465,6 +470,12 @@ class SiteBackend:
         await self.db.user.create_profile(
             PlayerProfile(profile_id, user_id, name, model)
         )
+
+        # Union sync: fire-and-forget
+        if self._union_backend:
+            import asyncio
+            asyncio.create_task(self._union_backend.sync_profile_add(name, profile_id))
+
         return {"id": profile_id, "name": name, "model": model}
 
     async def update_profile(self, user_id, pid, name):
@@ -488,7 +499,14 @@ class SiteBackend:
             if existing:
                 raise HTTPException(status_code=400, detail="角色名已被占用")
 
+        old_name = profile_row.name
         await self.db.user.update_profile_name(pid, name)
+
+        # Union sync: fire-and-forget on rename
+        if self._union_backend and old_name != name:
+            import asyncio
+            asyncio.create_task(self._union_backend.sync_profile_update(pid, name))
+
         return True
 
     async def delete_profile(self, user_id, pid):
@@ -499,6 +517,11 @@ class SiteBackend:
             raise HTTPException(status_code=403, detail="not allowed")
 
         await self.db.user.delete_profile(pid)
+
+        # Union sync: fire-and-forget on delete
+        if self._union_backend:
+            import asyncio
+            asyncio.create_task(self._union_backend.sync_profile_delete(pid))
 
     async def clear_profile_texture(self, user_id, pid, texture_type):
         is_owner = await self.db.user.verify_profile_ownership(user_id, pid)
